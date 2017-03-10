@@ -40,7 +40,7 @@ class Butler(object):
             sig = []
             for f in fn:
                 sig.append(self.get_sb_sig(fn=f))
-            fn = fn[np.argmin(sig)]
+            fn = fn[np.argmax(sig)]
         else:
             fn = fn[0]
         return os.path.join(self.imdir, fn)
