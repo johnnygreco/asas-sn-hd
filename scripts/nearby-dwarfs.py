@@ -4,14 +4,14 @@ import os
 from astropy.table import Table
 from astropy.io import fits
 import sexpy
-import asshugs
+import ashd
 
 dwarfs = Table.read('/Users/protostar/Downloads/nearby-dwarfs.fits')
 dwarfs.rename_column('_RAJ2000', 'ra')
 dwarfs.rename_column('_DEJ2000', 'dec')
 
 pixscale = 7.8
-butler = asshugs.Butler()
+butler = ashd.Butler()
 local_io = os.environ.get('LOCAL_DATA')
 sexdir = os.path.join(local_io, 'asas-sn-hugs-io/sex')
 configdir = os.path.join(sexdir, 'config')
@@ -36,7 +36,7 @@ for name in names:
     run_fn = butler.get_image_fn(ra, dec)
     img = fits.getdata(run_fn)
     head = fits.getheader(run_fn)
-    img_ring = asshugs.rmedian(img, 2.0, 4.0)
+    img_ring = ashd.rmedian(img, 2.0, 4.0)
     label = name.replace(' ', '-')
     new_fn = sw.get_indir(label+'-ring-filtered.fits')
     fits.writeto(new_fn, img_ring,  header=head, overwrite=True)

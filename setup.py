@@ -9,14 +9,14 @@ except ImportError:
     from distutils.core import setup
 
 setup(
-    name="asshugs",
+    name="ashd",
     version='v0.1',
     author="Johnny Greco",
     author_email="jgreco@astro.princeton.edu",
-    packages=["asshugs"],
-    url="https://github.com/johnnygreco/asas-sn-hugs",
+    packages=["ashd"],
+    url="https://github.com/johnnygreco/asas-sn-hd",
     license="MIT",
-    description="Search for diffuse galaxies with ASAS-SN",
+    description="Hunt for dwarf galaxies with ASAS-SN",
     classifiers=[
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",

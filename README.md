@@ -1,3 +1,3 @@
-# ASAS-SN HUGs
+# ASAS-SN HD
 
-The ASAS-SN Hunt for Ultra-diffuse Galaxies.
+The ASAS-SN Hunt for Dwarfs

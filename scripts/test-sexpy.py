@@ -3,7 +3,7 @@
 import os
 from astropy.io import fits
 import sexpy
-import asshugs 
+import ashd 
 
 pixscale = 7.8
 local_io = os.environ.get('LOCAL_DATA')
@@ -31,7 +31,7 @@ sw = sexpy.SexWrapper(config=config,
 
 img = fits.getdata(run_fn)
 head = fits.getheader(run_fn)
-img_rm = asshugs.rmedian(img, 2.0, 4.0)
+img_rm = ashd.rmedian(img, 2.0, 4.0)
 new_fn = sw.get_indir('img_ring_filtered.fits')
 fits.writeto(new_fn, img_rm,  header=head, overwrite=True)
 
