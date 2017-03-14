@@ -1,10 +1,17 @@
 #!/usr/bin/env python 
 
 import os
+from argparse import ArgumentParser
 from astropy.table import Table
 from astropy.io import fits
 import sexpy
 import ashd
+
+parser = ArgumentParser()
+parser.add_argument('name', type=str, 
+                    help='dwarf name from McConnachie 2012')
+args = parser.parse_args()
+name = args.name
 
 dwarfs = Table.read('/Users/protostar/Downloads/nearby-dwarfs.fits')
 dwarfs.rename_column('_RAJ2000', 'ra')
@@ -28,19 +35,17 @@ sw = sexpy.SexWrapper(config=config,
                       configdir=configdir,
                       params=params)
 
-names = ['Leo II', 'Phoenix', 'Cetus', 
-         'Andromeda III', 'Andromeda II', 'IC 10']
-
-for name in names:
-    ra, dec = dwarfs[dwarfs['Name']==name]['ra', 'dec'][0]
-    run_fn = butler.get_image_fn(ra, dec)
-    img = fits.getdata(run_fn)
-    head = fits.getheader(run_fn)
-    img_ring = ashd.rmedian(img, 2.0, 4.0)
-    label = name.replace(' ', '-')
-    new_fn = sw.get_indir(label+'-ring-filtered.fits')
-    fits.writeto(new_fn, img_ring,  header=head, overwrite=True)
-    cat_fn = sw.get_outdir(label+'-sex.cat')
-    sw.run(new_fn, cat=cat_fn)
-    cat = sexpy.read_cat(cat_fn)
-    sexpy.cat_to_ds9reg(cat, outfile=sw.get_outdir(label+'-sex.reg'))
+ra, dec = dwarfs[dwarfs['Name']==name]['ra', 'dec'][0]
+run_fn = butler.get_image_fn(ra, dec)
+img = fits.getdata(run_fn)
+head = fits.getheader(run_fn)
+img_ring = ashd.rmedian(img, 2.0, 4.0)
+label = name.replace(' ', '-')
+label = label.replace('(', '')
+label = label.replace(')', '')
+new_fn = sw.get_indir(label+'-ring-filtered.fits')
+fits.writeto(new_fn, img_ring,  header=head, overwrite=True)
+cat_fn = sw.get_outdir(label+'-sex.cat')
+sw.run(new_fn, cat=cat_fn)
+cat = sexpy.read_cat(cat_fn)
+sexpy.cat_to_ds9reg(cat, outfile=sw.get_outdir(label+'-sex.reg'))

@@ -1,7 +1,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from asshugs.butler import Butler
+from ashd.butler import Butler
 
 def test_butler():
     ra = '02h39m59.3s'
