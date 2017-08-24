@@ -1,0 +1,114 @@
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+from astropy import units as u
+from astropy.visualization import ZScaleInterval
+from .butler import Butler, data_dir
+
+__all__ = ['Display']
+
+class Display(object):
+    """
+    Helper class for displaying stacked asas-sn images.
+    """
+
+    def __init__(self, data_dir=data_dir):
+        import pyds9
+        self.data_dir = data_dir
+        self.butler = Butler(data_dir)
+        self.ds9 = pyds9.DS9()
+
+    def ds9_view(self, ra, dec, unit=u.deg, plot_coord=False):
+        """
+        Display nearest image to (ra, dec) using ds9.
+
+        Parameters
+        ----------
+        ra : float
+            Right Ascension 
+        dec : float
+            Declination 
+        unit : astropy.units.Unit, optional
+            Unit of coordinates
+        """ 
+        img_fn = self.butler.get_image_fn(ra, dec, unit)
+        self.ds9.set('file '+img_fn)
+        if plot_coord:
+            self.ds9.set('regions', 'icrs; circle({},{},30") # color=red '.\
+                     format(ra, dec))
+
+    def mpl_view(self, ra=None, dec=None, unit=u.deg, pipe=None, 
+                 stretch='zscale', cmap='gray_r',
+                 figsize=(8, 8), imshow_kw={}):
+        """
+        Display image nearest image to (ra, dec) using matplotlib.
+        Must give ra & dec --or-- a pipeline object.
+
+        Parameters
+        ----------
+        ra : float
+            Right Ascension 
+        dec : float
+            Declination 
+        unit : astropy.units.Unit, optional
+            Unit of coordinates
+        pipe : ashd.pipeline.ASHDPipe, optional
+            Pipeline object, which has an image attribute
+        stretch: str, optional
+            Image stretch (zscale, ...)
+        cmap : str, optional
+            matplotlib colormap
+        figsize : tuple, optional
+            Figure size
+        imshow_kw : dict, optional
+            Keyword args for imshow
+
+        Returns 
+        -------
+        fig : matplotlib.figure.Figure
+            matplotlib figure 
+        ax : matplotlib.axes._subplots.AxesSubplot
+            matplotlib axis
+        """
+        if pipe is None:
+            assert (ra is not None) and (dec is not None)
+            data = self.butler.get_data(ra, dec, unit)
+        else:
+            data = pipe.original_data
+
+        if stretch == 'zscale':
+            zscale = ZScaleInterval()
+            vmin, vmax = zscale.get_limits(data)
+        elif scale == 'log':
+            # TODO 
+            # implement this 
+            pass
+
+        fig, ax = plt.subplots(figsize=figsize, 
+                               subplot_kw=dict(xticks=[], yticks=[]))
+        ax.imshow(data, vmin=vmin, vmax=vmax, origin='lower', 
+                  cmap=cmap, **imshow_kw)
+
+        return fig, ax
+
+    def mpl_view_sources(self, pipe, plot_coord=False, **kwargs):
+        fig, ax = self.mpl_view(pipe=pipe, **kwargs)
+
+        if plot_coord:
+            pix_x, pix_y = pipe.image.sky_to_pix(pipe.coord)
+            ax.plot(pix_x, pix_y, marker='o', mec='c', 
+                    ms=25, mfc='none', mew=2)
+
+	# plot an ellipse for each object
+        for i in range(len(pipe.sources)):
+            e = Ellipse(xy=(pipe.sources['x'][i], pipe.sources['y'][i]),
+			width=6*pipe.sources['a'][i],
+			height=6*pipe.sources['b'][i],
+			angle=pipe.sources['theta'][i] * 180. / np.pi)
+            e.set_facecolor('none')
+            e.set_edgecolor('red')
+            ax.add_artist(e)

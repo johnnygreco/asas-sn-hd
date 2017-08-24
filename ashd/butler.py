@@ -7,16 +7,16 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
-IMDIR = '/Users/protostar/Dropbox/projects/data/asas-sn-images'
+data_dir = '/Users/protostar/Dropbox/projects/data/asas-sn-images'
 
 class Butler(object):
     """
     Fetch ASAS-SN stacked images. 
     """
 
-    def __init__(self, imdir=IMDIR):
-        self.imdir = imdir
-        self.files = [fn for fn in os.listdir(self.imdir) if fn[-4:]=='fits']
+    def __init__(self, data_dir=data_dir):
+        self.data_dir = data_dir
+        self.files = [fn for fn in os.listdir(self.data_dir) if fn[-4:]=='fits']
         ra_vals = []
         dec_vals = []
         for fn in self.files:
@@ -43,7 +43,7 @@ class Butler(object):
             fn = fn[np.argmax(sig)]
         else:
             fn = fn[0]
-        return os.path.join(self.imdir, fn)
+        return os.path.join(self.data_dir, fn)
 
     def get_hdulist(self, ra=None, dec=None, unit=u.deg, fn=None):
         fn = fn if fn else self.get_image_fn(ra, dec, unit=u.deg)
@@ -59,5 +59,5 @@ class Butler(object):
 
     def get_sb_sig(self, ra=None, dec=None, unit=u.deg, fn=None):
         fn = fn if fn else self.get_image_fn(ra, dec, unit=u.deg)
-        head = fits.getheader(os.path.join(self.imdir, fn))
+        head = fits.getheader(os.path.join(self.data_dir, fn))
         return head['SB_SIG']
