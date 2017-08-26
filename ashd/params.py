@@ -31,8 +31,8 @@ class PipeParams(object):
 
         # ring filter parameters
         self.do_ring_filter = True
-        self.r_inner = 4.0
-        self.r_outer = 5.0
+        self.r_inner = 5.0
+        self.r_outer = 8.0
 
     @property
     def sep_back_kws(self):

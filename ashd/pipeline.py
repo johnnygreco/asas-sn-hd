@@ -7,7 +7,7 @@ from astropy import units as u
 import sep
 from .imutils import rmedian
 from .image import ASHDImage
-from .pipeparams import PipeParams
+from .params import PipeParams
 from . import utils
 
 __all__ = ['ASHDPipe']
@@ -51,6 +51,9 @@ class ASHDPipe(object):
         self.sources =  sep.extract(
             self.data_sub, err=bkg.globalrms, **self.params.sep_extract_kws)
         self.sources = pd.DataFrame(self.sources)
+        sky_coords = self.image.pix_to_sky(self.sources[['x', 'y']].values)
+        self.sources['ra'] = sky_coords[:, 0]
+        self.sources['dec'] = sky_coords[:, 1]
         
     def calc_auto_params(self):
         cols = ['x', 'y', 'a', 'b', 'theta']
@@ -58,11 +61,12 @@ class ASHDPipe(object):
         kronrad, krflag = sep.kron_radius(
             self.data_sub, x, y, a, b, theta, 6.0)
         flux, fluxerr, flag = sep.sum_ellipse(
-            self.data_sub, x, y, a, b, theta, 2.5*kronrad, subpix=1)
+            self.original_data, x, y, a, b, theta, 2.5*kronrad, subpix=1)
         flag |= krflag  # combine flags into 'flag'
+        flux[flux<=0] = np.nan
         mag_auto = self.image.zpt - 2.5*np.log10(flux)    
         r, flag = sep.flux_radius(
-            self.data_sub, x, y, 6.*a, 0.5, normflux=flux, subpix=5)
+            self.original_data, x, y, 6.*a, 0.5, normflux=flux, subpix=5)
         self.sources['mag_auto'] = mag_auto
         self.sources['flux_auto'] = flux
         self.sources['flux_radius'] = r

@@ -25,3 +25,11 @@ class ASHDImage(object):
         else:
             pix_coord = self.wcs.wcs_world2pix(sky_coord, 0)
         return pix_coord
+
+    def pix_to_sky(self, pix_coord):
+        if type(pix_coord[0])==float or type(pix_coord[0])==np.float64:
+            x, y= pix_coord
+            sky_coord = self.wcs.wcs_pix2world([[x, y]], 0)[0]
+        else:
+            sky_coord = self.wcs.wcs_pix2world(pix_coord, 0)
+        return sky_coord
