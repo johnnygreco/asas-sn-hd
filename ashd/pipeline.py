@@ -19,7 +19,7 @@ class ASHDPipe(object):
         self.logger = utils.get_logger(level=self.params.log_level)
         self.logger.info('fetching image nearest to ra, dec = {:.4f}, {:.4f}'.\
                          format(ra, dec)) 
-        self.image = ASHDImage(ra, dec, unit)
+        self.image = ASHDImage(ra, dec, unit, data_dir=params.data_dir)
         self.data = self.image.data.copy()
         self.coord = [ra, dec]
         self._display = None

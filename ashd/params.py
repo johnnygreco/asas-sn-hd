@@ -9,6 +9,7 @@ class PipeParams(object):
     def __init__(self):
 
         self.log_level = 'info'
+        self.data_dir = '/Users/protostar/Dropbox/projects/data/asas-sn-images'
         
         # sep.Background parameters
         self.bw = 64
