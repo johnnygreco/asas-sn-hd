@@ -39,25 +39,25 @@ class Butler(object):
         if len(fn)>1:
             sig = []
             for f in fn:
-                sig.append(self.get_sb_sig(fn=f))
+                sig.append(self.get_sb_sig(image_fn=f))
             fn = fn[np.argmax(sig)]
         else:
             fn = fn[0]
         return os.path.join(self.data_dir, fn)
 
-    def get_hdulist(self, ra=None, dec=None, unit=u.deg, fn=None):
-        fn = fn if fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_hdulist(self, ra=None, dec=None, unit=u.deg, image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
         return fits.open(fn)
 
-    def get_data(self, ra=None, dec=None, unit=u.deg, fn=None):
-        fn = fn if fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_data(self, ra=None, dec=None, unit=u.deg, image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
         return fits.getdata(fn)
 
-    def get_header(self, ra=None, dec=None, unit=u.deg, fn=None):
-        fn = fn if fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_header(self, ra=None, dec=None, unit=u.deg, image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
         return fits.getheader(fn)
 
-    def get_sb_sig(self, ra=None, dec=None, unit=u.deg, fn=None):
-        fn = fn if fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_sb_sig(self, ra=None, dec=None, unit=u.deg, image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
         head = fits.getheader(os.path.join(self.data_dir, fn))
         return head['SB_SIG']

@@ -10,13 +10,19 @@ __all__ = ['ASHDImage']
 
 class ASHDImage(object):
 
-    def __init__(self, ra, dec, unit=u.deg, data_dir=data_dir):
+    def __init__(self, ra=None, dec=None, unit=u.deg, image_fn=None, 
+                 data_dir=data_dir):
+        img_kws = dict(ra=ra, dec=dec, unit=unit, image_fn=image_fn)
         self.butler = Butler(data_dir)
-        self.header = self.butler.get_header(ra, dec, unit)
-        self.image_fn = self.butler.get_image_fn(ra, dec, unit)
+        self.header = self.butler.get_header(**img_kws)
+        if image_fn is None:
+            assert (ra is not None) and (dec is not None)
+            self.image_fn = self.butler.get_image_fn(ra, dec, unit)
+        else:
+            self.image_fn = image_fn
         self.zpt = self.header['ZEROPT']
         self.wcs = WCS(self.header)
-        self.data = ndarray_byteswap(self.butler.get_data(ra, dec, unit))
+        self.data = ndarray_byteswap(self.butler.get_data(**img_kws))
 
     def sky_to_pix(self, sky_coord):
         if type(sky_coord[0])==float or type(sky_coord[0])==np.float64:

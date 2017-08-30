@@ -16,13 +16,19 @@ __all__ = ['ASHDPipe']
 
 class ASHDPipe(object):
     
-    def __init__(self, ra, dec, unit=u.deg, params=None, run_name='dev-run'):
+    def __init__(self, ra=None, dec=None, unit=u.deg, image_fn=None, 
+                 params=None, run_name='dev-run'):
         self.run_name = run_name
         self.params = params if params else PipeParams()
         self.logger = utils.get_logger(level=self.params.log_level)
-        self.logger.info('fetching image nearest to ra, dec = {:.4f}, {:.4f}'.\
-                         format(ra, dec)) 
-        self.image = ASHDImage(ra, dec, unit, data_dir=params.data_dir)
+        if image_fn is None:
+            self.logger.info('fetching image near to ra,dec = {:.4f},{:.4f}'.\
+                             format(ra, dec)) 
+        else:
+            self.logger.info('fetching {}'.format(image_fn))
+        img_kw = dict(ra=ra, dec=dec, unit=unit, image_fn=image_fn, 
+                      data_dir=params.data_dir)
+        self.image = ASHDImage(**img_kw)
         self.image_label = self.image.image_fn.split('/')[-1][:-5]
         self.data = self.image.data.copy()
         self.coord = [ra, dec]
