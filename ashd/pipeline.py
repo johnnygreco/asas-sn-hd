@@ -87,7 +87,7 @@ class ASHDPipe(object):
                               plot_coord=plot_coord)
 
     def write_catalog(self, path='', condition=None):
-        label = pipe.image.image_fn.split('/')[-1][:-5]
+        label = self.image.image_fn.split('/')[-1][:-5]
         cat_fn = os.path.join(path, 'cat-'+label+'.csv')
         if condition is not None:
             sources = self.sources[condition].copy()
