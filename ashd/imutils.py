@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 import numpy as np
 import scipy.ndimage as ndi
 
-__all__ = ['rmedian', 'cutout']
+__all__ = ['rmedian', 'cutout', 'exp_kern']
 
 
 def _ring(r_inner, r_outer, dtype=np.int, invert=False):
@@ -105,3 +105,47 @@ def cutout(data, coord, header=None, size=301, write=None):
         from astropy.io import fits
         header = cutout.wcs.to_header() if header is not None else None
         fits.writeto(write, cutout.data, header, clobber=True)
+
+
+def exp_kern(alpha, size, norm_array=False, mode='center', factor=10):
+    """
+    Generate 2D, radially symmetric exponential kernal for sextractor. 
+    The kernels are discretized using `astropy.convolution.discretize_model`.
+    Parameters
+    ----------
+    alpha : float
+        The scale length of the exponential.
+    size : odd int
+        Number of pixel in x & y directions.
+    norm_array : bool, optional
+        If True, normalize the kern array. 
+    mode : str, optional
+        One of the following discretization modes: 
+        'center', 'oversample', 'linear_interp', 
+        or 'integrate'. See astropy docs for details. 
+    factor : float or int
+        Factor of oversampling. 
+    Returns
+    -------
+    kern : 2D ndarray, if (return_fn=False)
+        The convolution kernel. 
+    kern, fn, comment : ndarray, string, string (if return_fn=True)
+        The kernel, file name, and the comment
+        for the file.
+    Notes
+    -----
+    The kernel will be normalized by sextractor by 
+    default, and the non-normalized files are a bit 
+    cleaner due to less leading zeros. 
+    """
+    assert size%2!=0, 'ERROR: size must be odd'
+    from astropy.convolution import discretize_model
+
+    x_range = (-(int(size) - 1) // 2, (int(size) - 1) // 2 + 1)
+    model = lambda x, y: np.exp(-np.sqrt(x**2 + y**2)/alpha)
+    kern = discretize_model(model, x_range, x_range, mode=mode, factor=factor)
+
+    if norm_array:
+        kern /= kern.sum()
+    
+    return kern

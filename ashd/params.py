@@ -26,8 +26,12 @@ class PipeParams(object):
         self.clean_param = 1.0
         self.segmentation_map = False
         self.filter_type = 'conv'
-        self.kern_fwhm = 5.0
-        self.kern_size = 31
+
+        # smoothing kernel
+        size = 31
+        self.gauss_fwhm = 5.0
+        sigma = gaussian_fwhm_to_sigma*self.gauss_fwhm
+        self.kernel = Gaussian2DKernel(sigma, x_size=size, y_size=size)
 
         # ring filter parameters
         self.do_ring_filter = True
@@ -43,11 +47,13 @@ class PipeParams(object):
         
     @property
     def sep_extract_kws(self):
-        sigma = gaussian_fwhm_to_sigma*self.kern_fwhm
-        size = self.kern_size
-        kern = Gaussian2DKernel(sigma, x_size=size, y_size=size).array
+        if self.kernel is not None:
+            self.kernel.normalize()
+            kern_arr = self.kernel.array
+        else:
+            kern_arr = None
         kws = dict(
-           thresh=self.thresh, minarea=self.minarea, filter_kernel=kern, 
+           thresh=self.thresh, minarea=self.minarea, filter_kernel=kern_arr, 
            filter_type=self.filter_type, deblend_nthresh=self.deblend_nthresh, 
            deblend_cont=self.deblend_cont, clean=self.clean, 
            clean_param=self.clean_param, 

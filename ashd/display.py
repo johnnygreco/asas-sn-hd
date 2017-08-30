@@ -17,10 +17,16 @@ class Display(object):
     """
 
     def __init__(self, data_dir=data_dir):
-        import pyds9
         self.data_dir = data_dir
         self.butler = Butler(data_dir)
-        self.ds9 = pyds9.DS9()
+        self._ds9 = None
+
+    @property
+    def ds9(self):
+        if self._ds9 is None:
+            import pyds9
+            self._ds9 = pyds9.DS9()
+        return self._ds9
 
     def ds9_view(self, ra, dec, unit=u.deg, plot_coord=False):
         """
@@ -95,7 +101,8 @@ class Display(object):
 
         return fig, ax
 
-    def mpl_view_sources(self, pipe, plot_coord=False, **kwargs):
+    def mpl_view_sources(self, pipe, plot_coord=False, condition=None, 
+                         save_fn=None, **kwargs):
         fig, ax = self.mpl_view(pipe=pipe, **kwargs)
 
         if plot_coord:
@@ -104,11 +111,18 @@ class Display(object):
                     ms=25, mfc='none', mew=2)
 
 	# plot an ellipse for each object
-        for i in range(len(pipe.sources)):
-            e = Ellipse(xy=(pipe.sources['x'][i], pipe.sources['y'][i]),
-			width=6*pipe.sources['a'][i],
-			height=6*pipe.sources['b'][i],
-			angle=pipe.sources['theta'][i] * 180. / np.pi)
+        sources = pipe.sources.copy()
+        if condition is not None:
+            sources = sources[condition]
+        for _, src in sources.iterrows():
+            e = Ellipse(xy=(src.x, src.y),
+			width=6*src.a,
+			height=6*src.b,
+			angle=src.theta * 180. / np.pi)
             e.set_facecolor('none')
             e.set_edgecolor('red')
             ax.add_artist(e)
+        if save_fn is not None:
+            fig.savefig(save_fn)
+            plt.close(fig)
+

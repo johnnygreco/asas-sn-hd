@@ -48,8 +48,12 @@ class ASHDPipe(object):
         bkg = sep.Background(self.data, **self.params.sep_back_kws)
         self.data_sub = self.data - bkg
         self.logger.info('detecting sources')
-        self.sources =  sep.extract(
+        result =  sep.extract(
             self.data_sub, err=bkg.globalrms, **self.params.sep_extract_kws)
+        if self.params.segmentation_map:
+            self.sources, self.seg_map = result
+        else:
+            self.sources = result
         self.sources = pd.DataFrame(self.sources)
         sky_coords = self.image.pix_to_sky(self.sources[['x', 'y']].values)
         self.sources['ra'] = sky_coords[:, 0]
@@ -80,3 +84,11 @@ class ASHDPipe(object):
         self.logger.info('displaying image with ds9')
         self.display.ds9_view(self.coord[0], self.coord[1], 
                               plot_coord=plot_coord)
+
+    def write_catalog(self, cat_fn, condition=None):
+        if condition is not None:
+            sources = self.sources[condition].copy()
+        else:
+            sources = self.sources
+        self.logger.info('writing catalog to '+cat_fn)
+        sources.to_csv(cat_fn, index=False)
