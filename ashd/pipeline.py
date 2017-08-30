@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -85,7 +86,9 @@ class ASHDPipe(object):
         self.display.ds9_view(self.coord[0], self.coord[1], 
                               plot_coord=plot_coord)
 
-    def write_catalog(self, cat_fn, condition=None):
+    def write_catalog(self, path='', condition=None):
+        label = pipe.image.image_fn.split('/')[-1][:-5]
+        cat_fn = os.path.join(path, 'cat-'+label+'.csv')
         if condition is not None:
             sources = self.sources[condition].copy()
         else:
