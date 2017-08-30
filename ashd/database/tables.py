@@ -9,7 +9,6 @@ from astropy.coordinates import SkyCoord
 
 __all__ = ['Run', 'Image', 'Source']
 
-
 class Run(Base):
     __tablename__ = 'run'
 
@@ -18,134 +17,67 @@ class Run(Base):
     name = Column(String, nullable=False)
 
     # Relationships
-    Tracts = relationship('Tract', cascade='all, delete-orphan')
+    images = relationship('Image', cascade='all, delete-orphan')
 
 
 class Image(Base):
-    __tablename__ = 'tract'
+    __tablename__ = 'image'
 
     # Table columns
     id = Column(Integer, primary_key=True)
-    hsc_id = Column(Integer, nullable=False)
+    label = Column(String, nullable=False)
 
     # Relationships
     run_id = Column(Integer, ForeignKey('run.id'), nullable=False)
     run = relationship('Run')
-    patches = relationship('Patch', cascade='all, delete-orphan')
+    sources = relationship('Source', cascade='all, delete-orphan')
 
 
 class Source(Base):
     __tablename__ = 'source'
 
-    # Table columns
     id = Column(Integer, primary_key=True)
-    x_image = Column(Float, nullable=False)
-    y_image = Column(Float, nullable=False)
-    x_hsc = Column(Float, nullable=False)
-    y_hsc = Column(Float, nullable=False)
     ra =  Column(Float, nullable=False)
     dec = Column(Float, nullable=False)
 
-    a_image = Column(Float, nullable=True)  
-    b_image = Column(Float, nullable=True)  
-    theta_image = Column(Float, nullable=True)  
-    ellipticity = Column(Float, nullable=True)  
-    kron_radius = Column(Float, nullable=True)  
-    petro_radius = Column(Float, nullable=True)  
-    flags = Column(Integer, nullable=False)  
-
-    mag_auto_g = Column(Float, nullable=True)
-    mag_auto_r = Column(Float, nullable=True)
-    mag_auto_i = Column(Float, nullable=True)
-    magerr_auto_g = Column(Float, nullable=True)
-    magerr_auto_r = Column(Float, nullable=True)
-    magerr_auto_i = Column(Float, nullable=True)
-
-    mag_petro_g = Column(Float, nullable=True)
-    mag_petro_r = Column(Float, nullable=True)
-    mag_petro_i = Column(Float, nullable=True)
-    magerr_petro_g = Column(Float, nullable=True)
-    magerr_petro_r = Column(Float, nullable=True)
-    magerr_petro_i = Column(Float, nullable=True)
-
-    mag_ap0_g = Column(Float, nullable=True)
-    mag_ap1_g = Column(Float, nullable=True)
-    mag_ap2_g = Column(Float, nullable=True)
-    mag_ap3_g = Column(Float, nullable=True)
-    mag_ap4_g = Column(Float, nullable=True)
-    mag_ap5_g = Column(Float, nullable=True)
-    mag_ap6_g = Column(Float, nullable=True)
-    mag_ap7_g = Column(Float, nullable=True)
-    mag_ap8_g = Column(Float, nullable=True)
-    mag_ap9_g = Column(Float, nullable=True)
-    magerr_ap0_g = Column(Float, nullable=True)
-    magerr_ap1_g = Column(Float, nullable=True)
-    magerr_ap2_g = Column(Float, nullable=True)
-    magerr_ap3_g = Column(Float, nullable=True)
-    magerr_ap4_g = Column(Float, nullable=True)
-    magerr_ap5_g = Column(Float, nullable=True)
-    magerr_ap6_g = Column(Float, nullable=True)
-    magerr_ap7_g = Column(Float, nullable=True)
-    magerr_ap8_g = Column(Float, nullable=True)
-    magerr_ap9_g = Column(Float, nullable=True)
-
-    mag_ap0_r = Column(Float, nullable=True)
-    mag_ap1_r = Column(Float, nullable=True)
-    mag_ap2_r = Column(Float, nullable=True)
-    mag_ap3_r = Column(Float, nullable=True)
-    mag_ap4_r = Column(Float, nullable=True)
-    mag_ap5_r = Column(Float, nullable=True)
-    mag_ap6_r = Column(Float, nullable=True)
-    mag_ap7_r = Column(Float, nullable=True)
-    mag_ap8_r = Column(Float, nullable=True)
-    mag_ap9_r = Column(Float, nullable=True)
-    magerr_ap0_r = Column(Float, nullable=True)
-    magerr_ap1_r = Column(Float, nullable=True)
-    magerr_ap2_r = Column(Float, nullable=True)
-    magerr_ap3_r = Column(Float, nullable=True)
-    magerr_ap4_r = Column(Float, nullable=True)
-    magerr_ap5_r = Column(Float, nullable=True)
-    magerr_ap6_r = Column(Float, nullable=True)
-    magerr_ap7_r = Column(Float, nullable=True)
-    magerr_ap8_r = Column(Float, nullable=True)
-    magerr_ap9_r = Column(Float, nullable=True)
-
-    mag_ap0_i = Column(Float, nullable=True)
-    mag_ap1_i = Column(Float, nullable=True)
-    mag_ap2_i = Column(Float, nullable=True)
-    mag_ap3_i = Column(Float, nullable=True)
-    mag_ap4_i = Column(Float, nullable=True)
-    mag_ap5_i = Column(Float, nullable=True)
-    mag_ap6_i = Column(Float, nullable=True)
-    mag_ap7_i = Column(Float, nullable=True)
-    mag_ap8_i = Column(Float, nullable=True)
-    mag_ap9_i = Column(Float, nullable=True)
-    magerr_ap0_i = Column(Float, nullable=True)
-    magerr_ap1_i = Column(Float, nullable=True)
-    magerr_ap2_i = Column(Float, nullable=True)
-    magerr_ap3_i = Column(Float, nullable=True)
-    magerr_ap4_i = Column(Float, nullable=True)
-    magerr_ap5_i = Column(Float, nullable=True)
-    magerr_ap6_i = Column(Float, nullable=True)
-    magerr_ap7_i = Column(Float, nullable=True)
-    magerr_ap8_i = Column(Float, nullable=True)
-    magerr_ap9_i = Column(Float, nullable=True)
-
-    fwhm_g = Column(Float, nullable=True)  
-    fwhm_r = Column(Float, nullable=True)  
-    fwhm_i = Column(Float, nullable=True)  
-    flux_radius_g = Column(Float, nullable=True)
-    flux_radius_r = Column(Float, nullable=True)
-    flux_radius_i = Column(Float, nullable=True)
-
-    ebv = Column(Float, nullable=True)
-    A_g = Column(Float, nullable=True)
-    A_r = Column(Float, nullable=True)
-    A_i = Column(Float, nullable=True)
+    # sep paramters
+    x = Column(Float, nullable=False)
+    y = Column(Float, nullable=False)
+    x2 = Column(Float, nullable=False)
+    y2 = Column(Float, nullable=False)
+    xy = Column(Float, nullable=False)
+    errx2 = Column(Float, nullable=False)
+    erry2 = Column(Float, nullable=False)
+    errxy = Column(Float, nullable=False)
+    xmin = Column(Float, nullable=False)
+    xmax = Column(Float, nullable=False)
+    ymin = Column(Float, nullable=False)
+    ymax = Column(Float, nullable=False)
+    thresh = Column(Float, nullable=False)
+    npix = Column(Integer, nullable=False)
+    tnpix = Column(Integer, nullable=False)
+    a = Column(Float, nullable=False)
+    b = Column(Float, nullable=False)
+    theta = Column(Float, nullable=False)
+    cxx = Column(Float, nullable=False)
+    cyy = Column(Float, nullable=False)
+    cxy = Column(Float, nullable=False)
+    cflux = Column(Float, nullable=False)
+    flux = Column(Float, nullable=False)
+    cpeak= Column(Float, nullable=False)
+    peak= Column(Float, nullable=False)
+    xcpeak= Column(Float, nullable=False)
+    ycpeak= Column(Float, nullable=False)
+    xpeak= Column(Float, nullable=False)
+    ypeak= Column(Float, nullable=False)
+    flag = Column(Integer, nullable=False)
+    mag_auto = Column(Float, nullable=True)
+    flux_auto = Column(Float, nullable=True)
+    flux_radius = Column(Float, nullable=True)
 
     # Relationships
-    patch_id = Column(Integer, ForeignKey('patch.id'), nullable=False)
-    patch = relationship('Patch')
+    image_id = Column(Integer, ForeignKey('image.id'), nullable=False)
+    image = relationship('Image')
 
     @property
     def skycoord(self):

@@ -10,17 +10,20 @@ from .imutils import rmedian
 from .image import ASHDImage
 from .params import PipeParams
 from . import utils
+from . import database
 
 __all__ = ['ASHDPipe']
 
 class ASHDPipe(object):
     
-    def __init__(self, ra, dec, unit=u.deg, params=None):
+    def __init__(self, ra, dec, unit=u.deg, params=None, run_name='dev-run'):
+        self.run_name = run_name
         self.params = params if params else PipeParams()
         self.logger = utils.get_logger(level=self.params.log_level)
         self.logger.info('fetching image nearest to ra, dec = {:.4f}, {:.4f}'.\
                          format(ra, dec)) 
         self.image = ASHDImage(ra, dec, unit, data_dir=params.data_dir)
+        self.image_label = self.image.image_fn.split('/')[-1][:-5]
         self.data = self.image.data.copy()
         self.coord = [ra, dec]
         self._display = None
@@ -86,12 +89,16 @@ class ASHDPipe(object):
         self.display.ds9_view(self.coord[0], self.coord[1], 
                               plot_coord=plot_coord)
 
-    def write_catalog(self, path='', condition=None):
-        label = self.image.image_fn.split('/')[-1][:-5]
-        cat_fn = os.path.join(path, 'cat-'+label+'.csv')
+    def write_to_csv(self, path='', condition=None):
+        cat_fn = os.path.join(path, 'cat-'+self.image_label+'.csv')
         if condition is not None:
             sources = self.sources[condition].copy()
         else:
             sources = self.sources
         self.logger.info('writing catalog to '+cat_fn)
         sources.to_csv(cat_fn, index=False)
+
+    def write_to_db(self, session):
+        self.logger.info('writing catalog to database')
+        db_ingest = database.ASHDIngest(session, self.run_name)
+        db_ingest.add_all(self.image_label, self.sources)

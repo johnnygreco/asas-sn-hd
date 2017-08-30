@@ -1,3 +1,4 @@
+from . import database
 from .butler import Butler, data_dir
 from .pipeline import ASHDPipe
 from .image import ASHDImage
