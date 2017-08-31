@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from astropy import units as u
 from astropy.visualization import ZScaleInterval
+from astropy.io import fits
+from . import imutils
 from .butler import Butler, data_dir
 
 __all__ = ['Display']
@@ -46,6 +48,31 @@ class Display(object):
         if plot_coord:
             self.ds9.set('regions', 'icrs; circle({},{},30") # color=red '.\
                      format(ra, dec))
+
+    def ds9_cutout(self, ra, dec, unit=u.deg, size=300):
+        """
+        Display cutout image using ds9.
+        Parameters
+        ----------
+        ra : float
+            Right Ascension 
+        dec : float
+            Declination 
+        unit : astropy.units.Unit or str, optional
+            Unit of coordinates
+	size : int, array-like, optional
+	    The size (in pixels) of the cutout array along each axis.
+	    If an integer is given, will get a square. 
+        """
+        hdu = self.butler.get_hdulist(ra, dec, unit)[0]
+        header = hdu.header
+        data = hdu.data
+        cutout = imutils.make_cutout(data, (ra, dec), unit=unit,    
+                                     header=header, size=size)
+        hdulist = fits.HDUList([fits.PrimaryHDU(
+                                data=cutout.data, 
+                                header=cutout.wcs.to_header(relax=False))])
+        self.ds9.set_pyfits(hdulist)
 
     def mpl_view(self, ra=None, dec=None, unit=u.deg, pipe=None, 
                  stretch='zscale', cmap='gray_r',

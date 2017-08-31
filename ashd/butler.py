@@ -35,8 +35,7 @@ class Butler(object):
         self.unique_coords = SkyCoord(
             df.ra.values, df.dec.values, unit=(u.hourangle, u.deg))
         
-
-    def get_image_fn(self, ra, dec, unit=u.deg):
+    def get_image_fn(self, ra, dec, unit='deg'):
         coord = SkyCoord(ra, dec, unit=unit)
         seps = self.fn_coords.separation(coord)
         fn_coord = self.fn_coords[seps.argmin()].to_string('hmsdms').split()
@@ -53,19 +52,19 @@ class Butler(object):
             fn = fn[0]
         return os.path.join(self.data_dir, fn)
 
-    def get_hdulist(self, ra=None, dec=None, unit=u.deg, image_fn=None):
-        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_hdulist(self, ra=None, dec=None, unit='deg', image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)
         return fits.open(fn)
 
-    def get_data(self, ra=None, dec=None, unit=u.deg, image_fn=None):
-        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_data(self, ra=None, dec=None, unit='deg', image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)
         return fits.getdata(fn)
 
-    def get_header(self, ra=None, dec=None, unit=u.deg, image_fn=None):
-        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_header(self, ra=None, dec=None, unit='deg', image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)
         return fits.getheader(fn)
 
-    def get_sb_sig(self, ra=None, dec=None, unit=u.deg, image_fn=None):
-        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=u.deg)
+    def get_sb_sig(self, ra=None, dec=None, unit='deg', image_fn=None):
+        fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)
         head = fits.getheader(os.path.join(self.data_dir, fn))
         return head['SB_SIG']

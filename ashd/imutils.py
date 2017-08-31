@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 import numpy as np
 import scipy.ndimage as ndi
 
-__all__ = ['rmedian', 'cutout', 'exp_kern']
+__all__ = ['rmedian', 'make_cutout', 'exp_kern']
 
 
 def _ring(r_inner, r_outer, dtype=np.int, invert=False):
@@ -61,7 +61,8 @@ def rmedian(image, r_inner, r_outer, **kwargs):
     return filtered_data
 
 
-def cutout(data, coord, header=None, size=301, write=None):
+def make_cutout(data, coord, unit='deg', header=None, 
+           size=301, write=None):
     """
     Generate a postage stamp from a fits image.
 
@@ -73,6 +74,8 @@ def cutout(data, coord, header=None, size=301, write=None):
         The central coordinates for the cutout. If 
         header is None, then unit is pixels, else
         it is ra and dec in degrees.
+    unit : astropy.units.Unit or str, optional
+        Unit of coordinates
     header : Fits header, optional
         The fits header, which must have WCS info.
     size : int, array-like, optional
@@ -96,7 +99,7 @@ def cutout(data, coord, header=None, size=301, write=None):
     else:
         from astropy import wcs
         w = wcs.WCS(header)
-        coord = SkyCoord(coord[0], coord[1], frame='icrs', unit="deg") 
+        coord = SkyCoord(coord[0], coord[1], frame='icrs', unit=unit) 
         cutout = Cutout2D(data, coord, size, wcs=w)
 
     if write is None:
