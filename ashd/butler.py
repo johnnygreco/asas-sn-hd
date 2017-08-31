@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import re
 import numpy as np
+import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
@@ -27,6 +28,13 @@ class Butler(object):
             ra_vals.append(_ra[:2]+':'+_ra[2:]+':00')
             dec_vals.append(fn[5:8])
         self.fn_coords = SkyCoord(ra_vals, dec_vals, unit=(u.hourangle, u.deg))
+        ra_vals = self.fn_coords.ra.value 
+        dec_vals = self.fn_coords.dec.value 
+        df = pd.DataFrame(dict(ra=ra_vals, dec=dec_vals))
+        df.drop_duplicates(inplace=True)
+        self.unique_coords = SkyCoord(
+            df.ra.values, df.dec.values, unit=(u.hourangle, u.deg))
+        
 
     def get_image_fn(self, ra, dec, unit=u.deg):
         coord = SkyCoord(ra, dec, unit=unit)
