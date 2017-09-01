@@ -9,6 +9,7 @@ from astropy import units as u
 from astropy.visualization import ZScaleInterval
 from astropy.io import fits
 from . import imutils
+from . import utils
 from .butler import Butler, data_dir
 
 __all__ = ['Display']
@@ -49,7 +50,7 @@ class Display(object):
             self.ds9.set('regions', 'icrs; circle({},{},30") # color=red '.\
                      format(ra, dec))
 
-    def ds9_cutout(self, ra, dec, unit=u.deg, size=300):
+    def ds9_cutout(self, ra, dec, unit=u.deg, size=300, ell_par=[]):
         """
         Display cutout image using ds9.
         Parameters
@@ -73,6 +74,16 @@ class Display(object):
                                 data=cutout.data, 
                                 header=cutout.wcs.to_header(relax=False))])
         self.ds9.set_pyfits(hdulist)
+
+        if ell_par:
+            'ell_par = x, y, a, b, theta, [color]'
+            if len(ell_par)==5:
+                ell_par.append('cyan')
+            ell_par[2] *= utils.pixscale
+            ell_par[3] *= utils.pixscale
+            txt = 'icrs; ellipse({},{},{}",{}",{}) # color={}'
+            self.ds9.set('regions', txt.format(*ell_par))
+
 
     def mpl_view(self, ra=None, dec=None, unit=u.deg, pipe=None, 
                  stretch='zscale', cmap='gray_r',
