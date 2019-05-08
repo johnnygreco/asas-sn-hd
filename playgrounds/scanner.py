@@ -1,3 +1,6 @@
+#%%
+#%matplotlib notebook
+
 import photutils, astropy
 from photutils import datasets
 from astropy.modeling.functional_models import Sersic2D
@@ -19,11 +22,14 @@ from skimage import morphology, restoration
 
 import sep, argparse
 
-def get_img_data(coord):
+
+#%%
+def get_img_data(coord, butler):
     coord = SkyCoord(coord)
     imgn = butler.get_image_fn(ra=coord.ra.deg,dec=coord.dec.deg)
     img = fits.open(imgn)
     return img[0].data
+
 
 def get_objs(data):
     datab = data.byteswap().newbyteorder()
@@ -54,15 +60,20 @@ def find_lbg(objects, maxtries=10, percentiles=(0,90), corners=False):
     return None
 
 
-parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data given ra and dec.")
-parser.add_argument('--max-tries', type=int, default=10)
-parser.add_argument('--source', type=str)
-parser.add_argument('coordinates', type=str)
 
-args = parser.parse_args()
+#%%
+def main():
+    parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data given ra and dec.")
+    parser.add_argument('--max-tries', type=int, default=10)
+    parser.add_argument('--source', type=str)
+    parser.add_argument('coordinates', type=str)
 
-butler = ashd.Butler(args.source)
+    args = parser.parse_args()
 
-data = get_img_data(args.coordinates)
-objects, *_ = get_objs(data)
-print(find_lbg(objects))
+    butler = ashd.Butler(args.source)
+
+    data = get_img_data(args.coordinates, butler)
+    objects, *_ = get_objs(data)
+    print(find_lbg(objects))
+
+if __name__ == "__main__": main()
