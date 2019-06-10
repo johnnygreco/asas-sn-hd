@@ -65,7 +65,7 @@ def find_lbg(objects, data, maxtries=10, percentiles=(0,90), corners=False):
         if is_lbg(obj, data): return obj
 
 def is_lbg(obj, data, default=[30, 2030], extend=30, sigma=1000):
-    subset, smoothed = datasets(obj, data, default, extend, sigma)
+    subset, smoothed = datavals(obj, data, default, extend, sigma)
     
     maxval = np.mean(smoothed) + np.std(smoothed)
     mid = smoothed[smoothed.size // 2]
@@ -76,7 +76,7 @@ def is_lbg(obj, data, default=[30, 2030], extend=30, sigma=1000):
     #        #subset[i] = smoothed[i]
     #return (subset, smoothed)
 
-def datasets(obj, data, default, extend, sigma):
+def datavals(obj, data, default, extend, sigma):
     xmin = int(obj['xmin']) - extend
     xmin = xmin if xmin > default[0] else default[0]
     xmax = int(obj['xmax']) + extend
