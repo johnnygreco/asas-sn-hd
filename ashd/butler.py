@@ -8,25 +8,25 @@ import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
-data_dir = '/Users/protostar/Dropbox/projects/data/asas-sn-images'
+from .image import ASHDImage
 
 class Butler(object):
     """
     Fetch ASAS-SN stacked images. 
     """
 
-    def __init__(self, data_dir=data_dir):
+    def __init__(self, data_dir):
         self.data_dir = data_dir
-        self.files = [fn for fn in os.listdir(self.data_dir) if fn[-4:]=='fits']
+        self.files = [file for file in os.listdir(self.data_dir) if file[-4:]=='fits']
         ra_vals = []
         dec_vals = []
-        for fn in self.files:
-            _ra = int(fn[1:5])
+        for f in self.files:
+            _ra = int(f[1:5])
             if _ra > 2400:
                 _ra = _ra - 2400
             _ra = str(_ra).zfill(4)
             ra_vals.append(_ra[:2]+':'+_ra[2:]+':00')
-            dec_vals.append(fn[5:8])
+            dec_vals.append(f[5:8])
         self.fn_coords = SkyCoord(ra_vals, dec_vals, unit=(u.hourangle, u.deg))
         ra_vals = self.fn_coords.ra.value 
         dec_vals = self.fn_coords.dec.value 
@@ -41,7 +41,7 @@ class Butler(object):
         fn_coord = self.fn_coords[seps.argmin()].to_string('hmsdms').split()
         fn_ra = ''.join(re.split('[a-z]', fn_coord[0])[:2])
         fn_dec = re.split('[a-z]', fn_coord[1])[0]
-        prefix = 'F{}{}_'.format(fn_ra, fn_dec)
+        prefix = f'F{fn_ra}{fn_dec}_'
         fn = [f for f in self.files if prefix in f]
         if len(fn)>1:
             sig = []
@@ -51,6 +51,9 @@ class Butler(object):
         else:
             fn = fn[0]
         return os.path.join(self.data_dir, fn)
+    
+    def get_image(self, ra, dec, unit='deg'):
+        return ASHDImage(self, ra=ra, dec=dec)
 
     def get_hdulist(self, ra=None, dec=None, unit='deg', image_fn=None):
         fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)

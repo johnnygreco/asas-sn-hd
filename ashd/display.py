@@ -10,7 +10,7 @@ from astropy.visualization import ZScaleInterval
 from astropy.io import fits
 from . import imutils
 from . import utils
-from .butler import Butler, data_dir
+from .butler import Butler
 
 __all__ = ['Display']
 
@@ -19,7 +19,7 @@ class Display(object):
     Helper class for displaying stacked asas-sn images.
     """
 
-    def __init__(self, data_dir=data_dir):
+    def __init__(self, data_dir):
         self.data_dir = data_dir
         self.butler = Butler(data_dir)
         self._ds9 = None
