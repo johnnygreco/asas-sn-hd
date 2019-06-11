@@ -17,20 +17,18 @@ from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-import skimage
-from skimage import morphology, restoration
-
 import sep, argparse
 
 from scipy import interpolate, signal
 
 
 #%%
-def get_img_data(coord, butler):
+def get_img_data(coord, file_path, butler=None):
     coord = SkyCoord(coord)
-    imgn = butler.get_image_fn(ra=coord.ra.deg,dec=coord.dec.deg)
-    img = fits.open(imgn)
-    return img[0].data
+    return ashd.ASHDImage(ra=coord.ra.deg, dec=coord.dec.deg)
+    #imgn = butler.get_image_fn(ra=coord.ra.deg,dec=coord.dec.deg)
+    #img = fits.open(imgn)
+    #return img[0].data
 
 
 def get_objs(data):
@@ -90,6 +88,7 @@ def datavals(obj, data, default, extend, sigma):
     
     return (subset, smoothed)
 
+def process_object(obj):
 
 
 #%%
@@ -101,9 +100,9 @@ def main():
 
     args = parser.parse_args()
 
-    butler = ashd.Butler(args.source)
+    #butler = ashd.Butler(args.source)
 
-    data = get_img_data(args.coordinates, butler)
+    data = get_img_data(args.coordinates, args.source)
     objects, *_ = get_objs(data)
     print(find_lbg(objects, data))
 
