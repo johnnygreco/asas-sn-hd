@@ -21,7 +21,6 @@ import sep, argparse
 
 from scipy import interpolate, signal
 
-
 #%%
 def get_img_data(coord, file_path, butler=None):
     coord = SkyCoord(coord)
@@ -88,8 +87,8 @@ def datavals(obj, data, default, extend, sigma):
     
     return (subset, smoothed)
 
-def process_object(obj):
-
+#def process_object(obj):
+    
 
 #%%
 def main():
