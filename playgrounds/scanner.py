@@ -58,22 +58,24 @@ def find_lbg_old(objects, maxtries=10, percentiles=(0,90), corners=False):
             return obj
     return None
 
-def find_lbg(objects, data, maxtries=10, percentiles=(0,90), corners=False):
-    largest = sorted(objects, key = lambda x: x['npix'], reverse=True)
+def find_lbg(objects, data, maxtries=-1, percentiles=(0,90), corners=False):
+    if maxtries < 0: maxtries = objects.size
+    if not corners: objects = np.array(list(cut_corners(objects, thresh=500)))
+    
+    largest = sorted(objects, key = lambda x: x['npix'], reverse=True)[0:maxtries+1]
     for obj in largest:
         if is_lbg(obj, data): return obj
+    return None
 
 def is_lbg(obj, data, default=[30, 2030], extend=30, sigma=1000):
     subset, smoothed = datavals(obj, data, default, extend, sigma)
     
-    maxval = np.mean(smoothed) + np.std(smoothed)
+    m = np.mean(smoothed)
+    maxval = m + np.std(smoothed)
     mid = smoothed[smoothed.size // 2]
-    return mid > maxval
-
-    #for i in range(subset.size):
-    #    if subset[i] > smoothed[i]: pass
-    #        #subset[i] = smoothed[i]
-    #return (subset, smoothed)
+    p25 = smoothed[smoothed.size // 4] - smoothed[(smoothed.size // 4) - 1]
+    p75 = smoothed[smoothed.size * 3 // 4] - smoothed[(smoothed.size * 3 // 4) - 1]
+    return mid > maxval and p25 > 0 and p75 < m
 
 def datavals(obj, data, default, extend, sigma):
     xmin = int(obj['xmin']) - extend
