@@ -21,10 +21,13 @@ import sep, argparse
 
 from scipy import interpolate, signal
 
+import sqlite3
+
 #%%
 def get_img_data(coord, file_path, butler=None):
     coord = SkyCoord(coord)
-    return ashd.ASHDImage(ra=coord.ra.deg, dec=coord.dec.deg)
+    return 
+    #return ashd.ASHDImage(ra=coord.ra.deg, dec=coord.dec.deg)
     #imgn = butler.get_image_fn(ra=coord.ra.deg,dec=coord.dec.deg)
     #img = fits.open(imgn)
     #return img[0].data
@@ -44,28 +47,35 @@ def cut_corners(objlist, thresh=30, size=[2048, 2048]):
             if not (x < thresh and y > (size[1] - thresh)) and not (x > (size[0] - thresh) and y > (size[1] - thresh)):
                 yield i
 
-def find_lbg_old(objects, maxtries=10, percentiles=(0,90), corners=False):
-    if not corners: objects = np.array(list(cut_corners(objects, thresh=500)))
+def find_lbg_v1(objects, data, **kwargs):
+    if not kwargs.get('corners', False): objects = np.array(list(cut_corners(objects, thresh=500)))
 
     avgsb = np.mean(objects['cflux'] / objects['npix'])
 
     brightsort = sorted(objects, key=lambda x: x['cflux'] / x['npix']); cnt = len(brightsort)
     largest = sorted(brightsort[cnt * percentiles[0] // 100 : cnt * percentiles[1] // 100],
-                    key=lambda x: x['npix'], reverse=True)[0:maxtries+1]
+                    key=lambda x: x['npix'], reverse=True)[0:kwargs.get('maxtries', 10)]
+    found = 0; maxfindings = kwargs.get('maxfindings', 2)
     for obj in largest:
         sb = obj['cflux'] / obj['npix']
         if sb < avgsb:
-            return obj
-    return None
+            found += 1
+            yield obj
+            if found > findings: break
+    #return None
 
-def find_lbg(objects, data, maxtries=-1, percentiles=(0,90), corners=False):
-    if maxtries < 0: maxtries = objects.size
-    if not corners: objects = np.array(list(cut_corners(objects, thresh=500)))
+def find_lbg_v2(objects, data, **kwargs):
+    maxtries = kwargs.get('maxtries', objects.size)
+    if not kwargs.get('corners', False): objects = np.array(list(cut_corners(objects, thresh=500)))
     
-    largest = sorted(objects, key = lambda x: x['npix'], reverse=True)[0:maxtries+1]
+    largest = sorted(objects, key = lambda x: x['npix'], reverse=True)[0:maxtries]
+    found = 0; maxfindings = kwargs.get('maxfindings', 2)
     for obj in largest:
-        if is_lbg(obj, data): return obj
-    return None
+        if is_lbg(obj, data):
+            found += 1
+            yield obj
+            if found > findings: break
+    #return None
 
 def is_lbg(obj, data, default=[30, 2030], extend=30, sigma=1000):
     subset, smoothed = datavals(obj, data, default, extend, sigma)
@@ -101,10 +111,10 @@ def main():
 
     args = parser.parse_args()
 
-    #butler = ashd.Butler(args.source)
+    butler = ashd.Butler(args.source)
 
-    data = get_img_data(args.coordinates, args.source)
+    data = get_img_data(args.coordinates, butler)
     objects, *_ = get_objs(data)
-    print(find_lbg(objects, data))
+    print(find_lbg_v1(objects, data))
 
 if __name__ == "__main__": main()
