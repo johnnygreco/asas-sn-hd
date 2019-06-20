@@ -26,3 +26,4 @@ logs/
 
 .vscode/
 playgrounds/.vscode/
+playgrounds/out*

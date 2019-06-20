@@ -21,6 +21,8 @@ import sep, argparse
 
 from scipy import interpolate, signal
 
+import os, glob, sys
+
 import sqlite3
 
 #%%
@@ -49,6 +51,7 @@ def cut_corners(objlist, thresh=30, size=[2048, 2048]):
 
 def find_lbg_v1(objects, data, **kwargs):
     if not kwargs.get('corners', False): objects = np.array(list(cut_corners(objects, thresh=500)))
+    percentiles = kwargs.get('percentiles', [10,99])
 
     avgsb = np.mean(objects['cflux'] / objects['npix'])
 
@@ -61,7 +64,7 @@ def find_lbg_v1(objects, data, **kwargs):
         if sb < avgsb:
             found += 1
             yield obj
-            if found > findings: break
+            if found > maxfindings: break
     #return None
 
 def find_lbg_v2(objects, data, **kwargs):
@@ -74,7 +77,7 @@ def find_lbg_v2(objects, data, **kwargs):
         if is_lbg(obj, data):
             found += 1
             yield obj
-            if found > findings: break
+            if found > maxfindings: break
     #return None
 
 def is_lbg(obj, data, default=[30, 2030], extend=30, sigma=1000):
@@ -104,17 +107,50 @@ def datavals(obj, data, default, extend, sigma):
 
 #%%
 def main():
-    parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data given ra and dec.")
+    parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data.")
     parser.add_argument('--max-tries', type=int, default=10)
+    parser.add_argument('--max-per-img', type=int, default=2)
     parser.add_argument('--source', type=str)
-    parser.add_argument('coordinates', type=str)
+    #parser.add_argument('coordinates', type=str)
+
+    run = len(glob.glob("./out*.db"))
+    os.mkdir(f"./out{run}")
 
     args = parser.parse_args()
+    conn = sqlite3.connect(f"out{run}.db")
+    c = conn.cursor()
+    c.execute("create table findings (id text, ra real, dec real, properties text)")
 
     butler = ashd.Butler(args.source)
+    count = 0
+    for i in butler.fn_coords:
+        try:
+            img = butler.get_image(i.ra.deg, i.dec.deg)
+        except:
+            print(sys.exc_info()[1])
+            print(f"Reader barfed on coordinate {str(i)}. Skipping...")
+            continue
+        dsub = img.data.byteswap().newbyteorder()
+        objects, *_ = get_objs(dsub)
+        lbgs = find_lbg_v1(objects, dsub, maxtries=args.max_tries, maxfindings=args.max_per_img)
+        for obj in lbgs:
+            print(obj)
+            uid = np.base_repr(count, 36)
+            coord = img.pix_to_sky([obj['x'], obj['y']])
+            #print(coord)
+            zoomed_img = img.data[obj['ymin']:obj['ymax'], obj['xmin']:obj['xmax']]
+            c.execute("insert into findings values (?, ?, ?, ?)",
+                        (uid, coord[0], coord[1], str(obj)))
+            hdu = fits.PrimaryHDU(zoomed_img)
+            hdu.writeto(f"./out{run}/{uid}.fits")
+            count += 1
+    
+    conn.commit()
+    conn.close()
+    print(count, "objects found.")
 
-    data = get_img_data(args.coordinates, butler)
-    objects, *_ = get_objs(data)
-    print(find_lbg_v1(objects, data))
+
+
+
 
 if __name__ == "__main__": main()
