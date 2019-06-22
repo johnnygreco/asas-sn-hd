@@ -67,7 +67,8 @@ class Butler(object):
         fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)
         return fits.getheader(fn)
 
+    #Returns np.nan if the object has no SB_SIG
     def get_sb_sig(self, ra=None, dec=None, unit='deg', image_fn=None):
         fn = image_fn if image_fn else self.get_image_fn(ra, dec, unit=unit)
         head = fits.getheader(os.path.join(self.data_dir, fn))
-        return head['SB_SIG']
+        return head.get('SB_SIG', np.nan)

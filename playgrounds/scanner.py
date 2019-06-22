@@ -23,7 +23,10 @@ from scipy import interpolate, signal
 
 import os, glob, sys
 
-import sqlite3
+import sqlite3, multiprocessing, logging
+
+MAX_TRIES = 10
+MAX_FINDINGS = 3
 
 #%%
 def get_img_data(coord, file_path, butler=None):
@@ -35,8 +38,8 @@ def get_img_data(coord, file_path, butler=None):
     #return img[0].data
 
 
-def get_objs(data):
-    datab = data.byteswap().newbyteorder()
+def get_objs(datab):
+    #datab = data.byteswap().newbyteorder()
     background = sep.Background(datab)
     dsub = datab - background
     objects = sep.extract(dsub, 1.5, err=background.globalrms)
@@ -102,52 +105,59 @@ def datavals(obj, data, default, extend, sigma):
     
     return (subset, smoothed)
 
-#def process_object(obj):
-    
+def process(coord, butler, detect_func, **kwargs):
+    img = butler.get_image(coord.ra.deg, coord.dec.deg)
+    dsub = img.data.byteswap().newbyteorder()
+    objects, *_ = get_objs(dsub)
+    lbgs = detect_func(objects, dsub, maxtries=kwargs.get('max_tries', 3), maxfindings=args.max_per_img)
+    out = []
+    for obj in lbgs:
+        coord = img.pix_to_sky([obj['x'], obj['y']])
+        zoomed_img = img.data[obj['ymin']:obj['ymax'], obj['xmin']:obj['xmax']]
+        
+
+def callback(objlist, cursor, run):
+    for i in objlist:
+        coord, obj, zoomed = i
+        logger.info(f"At {coord}: {str(obj)}")
+        uid = np.base_repr()
+        cursor.execute("insert into findings values (?, ?, ?, ?)",
+                    (uid, coord[0], coord[1], str(obj)))
+        hdu = fits.PrimaryHDU(zoomed)
+        hdu.writeto(f"./out{run}/{uid}.fits")
+
+
+logger = logging.getLogger("Main")
 
 #%%
 def main():
     parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data.")
     parser.add_argument('--max-tries', type=int, default=10)
-    parser.add_argument('--max-per-img', type=int, default=2)
+    parser.add_argument('--max-findings', type=int, default=2)
     parser.add_argument('--source', type=str)
+    parser.add_argument('--processes', type=int, default=4)
     #parser.add_argument('coordinates', type=str)
 
     run = len(glob.glob("./out*.db"))
     os.mkdir(f"./out{run}")
 
     args = parser.parse_args()
+    butler = ashd.Butler(args.source)
+
+    args = parser.parse_args()
     conn = sqlite3.connect(f"out{run}.db")
     c = conn.cursor()
     c.execute("create table findings (id text, ra real, dec real, properties text)")
 
-    butler = ashd.Butler(args.source)
-    count = 0
-    for i in butler.fn_coords:
-        try:
-            img = butler.get_image(i.ra.deg, i.dec.deg)
-        except:
-            print(sys.exc_info()[1])
-            print(f"Reader barfed on coordinate {str(i)}. Skipping...")
-            continue
-        dsub = img.data.byteswap().newbyteorder()
-        objects, *_ = get_objs(dsub)
-        lbgs = find_lbg_v1(objects, dsub, maxtries=args.max_tries, maxfindings=args.max_per_img)
-        for obj in lbgs:
-            print(obj)
-            uid = np.base_repr(count, 36)
-            coord = img.pix_to_sky([obj['x'], obj['y']])
-            #print(coord)
-            zoomed_img = img.data[obj['ymin']:obj['ymax'], obj['xmin']:obj['xmax']]
-            c.execute("insert into findings values (?, ?, ?, ?)",
-                        (uid, coord[0], coord[1], str(obj)))
-            hdu = fits.PrimaryHDU(zoomed_img)
-            hdu.writeto(f"./out{run}/{uid}.fits")
-            count += 1
+    lock = multiprocessing.Lock()
+
+    f = lambda x: process(lock, c, run, x, butler, find_lbg_v1, args)
+    pool = multiprocessing.Pool(args.processes)
+    pool.map(f, butler.unique_coords)
     
     conn.commit()
     conn.close()
-    print(count, "objects found.")
+    print(os.listdir(f"./out{run}"), "objects found.")
 
 
 
