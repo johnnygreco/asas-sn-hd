@@ -38,8 +38,8 @@ def get_img_data(coord, file_path, butler=None):
     #return img[0].data
 
 
-def get_objs(datab):
-    #datab = data.byteswap().newbyteorder()
+def get_objs(data):
+    datab = data.byteswap().newbyteorder()
     background = sep.Background(datab)
     dsub = datab - background
     objects = sep.extract(dsub, 1.5, err=background.globalrms)
@@ -60,8 +60,8 @@ def find_lbg_v1(objects, data, **kwargs):
 
     brightsort = sorted(objects, key=lambda x: x['cflux'] / x['npix']); cnt = len(brightsort)
     largest = sorted(brightsort[cnt * percentiles[0] // 100 : cnt * percentiles[1] // 100],
-                    key=lambda x: x['npix'], reverse=True)[0:kwargs.get('maxtries', 10)]
-    found = 0; maxfindings = kwargs.get('maxfindings', 2)
+                    key=lambda x: x['npix'], reverse=True)[0:kwargs.get('maxtries', MAX_TRIES)]
+    found = 0; maxfindings = kwargs.get('maxfindings', MAX_FINDINGS)
     for obj in largest:
         sb = obj['cflux'] / obj['npix']
         if sb < avgsb:
@@ -75,7 +75,7 @@ def find_lbg_v2(objects, data, **kwargs):
     if not kwargs.get('corners', False): objects = np.array(list(cut_corners(objects, thresh=500)))
     
     largest = sorted(objects, key = lambda x: x['npix'], reverse=True)[0:maxtries]
-    found = 0; maxfindings = kwargs.get('maxfindings', 2)
+    found = 0; maxfindings = kwargs.get('maxfindings', MAX_FINDINGS)
     for obj in largest:
         if is_lbg(obj, data):
             found += 1
@@ -105,12 +105,14 @@ def datavals(obj, data, default, extend, sigma):
     
     return (subset, smoothed)
 
-def process(coord, butler, detect_func, **kwargs):
+def process(coord, butler, **kwargs):
     print(f"Looking at {coord.ra.deg}, {coord.dec.deg}")
     img = butler.get_image(coord.ra.deg, coord.dec.deg)
+    print(img.image_fn)
     dsub = img.data.byteswap().newbyteorder()
     objects, *_ = get_objs(dsub)
-    lbgs = detect_func(objects, dsub)
+    print(len(objects))
+    lbgs = find_lbg_v1(objects, dsub)
     out = []
     for obj in lbgs:
         coord = img.pix_to_sky([obj['x'], obj['y']])
@@ -120,12 +122,13 @@ def process(coord, butler, detect_func, **kwargs):
     return out
         
 
-def callback(objlist, cursor, run):
+def callback(objlist):
     for i in objlist:
         coord, obj, zoomed = i
         print(f"Writing {coord}: {str(obj)}")
-        uid = np.base_repr()
-        cursor.execute("insert into findings values (?, ?, ?, ?)",
+        uid = np.base_repr(len(os.listdir(f"./out{run}")), 36)
+        cur = conn.cursor()
+        cur.execute("insert into findings values (?, ?, ?, ?)",
                     (uid, coord[0], coord[1], str(obj)))
         hdu = fits.PrimaryHDU(zoomed)
         hdu.writeto(f"./out{run}/{uid}.fits")
@@ -141,7 +144,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 #%%
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data.")
     parser.add_argument('--max-tries', type=int, default=10)
     parser.add_argument('--max-findings', type=int, default=2)
@@ -160,21 +163,15 @@ def main():
     c = conn.cursor()
     c.execute("create table findings (id text, ra real, dec real, properties text)")
 
-    cb = lambda x: callback(x, c, run)
+    #cb = lambda x: callback(x, c, run)
 
-    pool = multiprocessing.Pool(args.processes)
-    for i in butler.unique_coords:
+    pool = multiprocessing.Pool(1)
+    for i in butler.unique_coords[:20]:
             logger.info(f"Looking at {i.ra.deg}, {i.dec.deg}")
-            pool.apply_async(process, args=(i, butler, find_lbg_v1), callback=cb)
+            pool.apply_async(process, args=(i, butler), callback=callback)
     pool.close()
     pool.join()
     
     conn.commit()
     conn.close()
     print(os.listdir(f"./out{run}"), "objects found.")
-
-
-
-
-
-if __name__ == "__main__": main()
