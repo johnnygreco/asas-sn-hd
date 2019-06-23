@@ -106,20 +106,24 @@ def datavals(obj, data, default, extend, sigma):
     return (subset, smoothed)
 
 def process(coord, butler, detect_func, **kwargs):
+    print(f"Looking at {coord.ra.deg}, {coord.dec.deg}")
     img = butler.get_image(coord.ra.deg, coord.dec.deg)
     dsub = img.data.byteswap().newbyteorder()
     objects, *_ = get_objs(dsub)
-    lbgs = detect_func(objects, dsub, maxtries=kwargs.get('max_tries', 3), maxfindings=args.max_per_img)
+    lbgs = detect_func(objects, dsub)
     out = []
     for obj in lbgs:
         coord = img.pix_to_sky([obj['x'], obj['y']])
         zoomed_img = img.data[obj['ymin']:obj['ymax'], obj['xmin']:obj['xmax']]
+        print(f"At {coord}: {str(obj)}")
+        out.append((coord, obj, zoomed_img))
+    return out
         
 
 def callback(objlist, cursor, run):
     for i in objlist:
         coord, obj, zoomed = i
-        logger.info(f"At {coord}: {str(obj)}")
+        print(f"Writing {coord}: {str(obj)}")
         uid = np.base_repr()
         cursor.execute("insert into findings values (?, ?, ?, ?)",
                     (uid, coord[0], coord[1], str(obj)))
@@ -128,6 +132,13 @@ def callback(objlist, cursor, run):
 
 
 logger = logging.getLogger("Main")
+
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 #%%
 def main():
@@ -149,11 +160,14 @@ def main():
     c = conn.cursor()
     c.execute("create table findings (id text, ra real, dec real, properties text)")
 
-    lock = multiprocessing.Lock()
+    cb = lambda x: callback(x, c, run)
 
-    f = lambda x: process(lock, c, run, x, butler, find_lbg_v1, args)
     pool = multiprocessing.Pool(args.processes)
-    pool.map(f, butler.unique_coords)
+    for i in butler.unique_coords:
+            logger.info(f"Looking at {i.ra.deg}, {i.dec.deg}")
+            pool.apply_async(process, args=(i, butler, find_lbg_v1), callback=cb)
+    pool.close()
+    pool.join()
     
     conn.commit()
     conn.close()
