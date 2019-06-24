@@ -132,6 +132,7 @@ def callback(objlist):
                     (uid, coord[0], coord[1], str(obj)))
         hdu = fits.PrimaryHDU(zoomed)
         hdu.writeto(f"./out{run}/{uid}.fits")
+        objCount += 1
 
 
 #%%
@@ -157,6 +158,7 @@ if __name__ == "__main__":
 
     pool = multiprocessing.Pool(args.processes)
     cnt = len(butler.unique_coords)
+    objCount = 0
     for i in range(cnt):
         coord = butler.unique_coords[i]
         pool.apply_async(process, args=(coord, i, cnt, butler), callback=callback)
@@ -165,4 +167,4 @@ if __name__ == "__main__":
     
     conn.commit()
     conn.close()
-    logging.info(f"{len(os.listdir(f"./out{run}"))} objects found.")
+    logging.info(f"{objCount} objects found.")
