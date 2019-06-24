@@ -28,6 +28,8 @@ import sqlite3, multiprocessing, logging
 MAX_TRIES = 10
 MAX_FINDINGS = 3
 
+logging.basicConfig(format=f"[%(asctime)s][%(levelname)s] %(message)s", level=logging.INFO)
+
 #%%
 def get_img_data(coord, file_path, butler=None):
     coord = SkyCoord(coord)
@@ -105,19 +107,17 @@ def datavals(obj, data, default, extend, sigma):
     
     return (subset, smoothed)
 
-def process(coord, butler, **kwargs):
-    print(f"Looking at {coord.ra.deg}, {coord.dec.deg}")
+def process(coord, i, cnt, butler, **kwargs):
+    logging.info(f"Process {multiprocessing.current_process().pid} is looking at sector {coord.ra.deg}, {coord.dec.deg} ({i}/{cnt})")
     img = butler.get_image(coord.ra.deg, coord.dec.deg)
-    print(img.image_fn)
     dsub = img.data.byteswap().newbyteorder()
     objects, *_ = get_objs(dsub)
-    print(len(objects))
     lbgs = find_lbg_v1(objects, dsub)
     out = []
     for obj in lbgs:
         coord = img.pix_to_sky([obj['x'], obj['y']])
         zoomed_img = img.data[obj['ymin']:obj['ymax'], obj['xmin']:obj['xmax']]
-        print(f"At {coord}: {str(obj)}")
+        logging.info(f"At {coord}: {str(obj)}")
         out.append((coord, obj, zoomed_img))
     return out
         
@@ -125,23 +125,14 @@ def process(coord, butler, **kwargs):
 def callback(objlist):
     for i in objlist:
         coord, obj, zoomed = i
-        print(f"Writing {coord}: {str(obj)}")
+        logging.debug(f"Writing {coord}: {str(obj)}")
         uid = np.base_repr(len(os.listdir(f"./out{run}")), 36)
-        cur = conn.cursor()
-        cur.execute("insert into findings values (?, ?, ?, ?)",
+        #cur = conn.cursor()
+        c.execute("insert into findings values (?, ?, ?, ?)",
                     (uid, coord[0], coord[1], str(obj)))
         hdu = fits.PrimaryHDU(zoomed)
         hdu.writeto(f"./out{run}/{uid}.fits")
 
-
-logger = logging.getLogger("Main")
-
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 #%%
 if __name__ == "__main__":
@@ -159,19 +150,19 @@ if __name__ == "__main__":
     butler = ashd.Butler(args.source)
 
     args = parser.parse_args()
-    conn = sqlite3.connect(f"out{run}.db")
+    logging.info(f"Running with {args.processes} processes. Process {multiprocessing.current_process().pid} is the main process.")
+    conn = sqlite3.connect(f"out{run}.db", check_same_thread=False)
     c = conn.cursor()
     c.execute("create table findings (id text, ra real, dec real, properties text)")
 
-    #cb = lambda x: callback(x, c, run)
-
-    pool = multiprocessing.Pool(1)
-    for i in butler.unique_coords[:20]:
-            logger.info(f"Looking at {i.ra.deg}, {i.dec.deg}")
-            pool.apply_async(process, args=(i, butler), callback=callback)
+    pool = multiprocessing.Pool(args.processes)
+    cnt = len(butler.unique_coords)
+    for i in range(cnt):
+        coord = butler.unique_coords[i]
+        pool.apply_async(process, args=(coord, i, cnt, butler), callback=callback)
     pool.close()
     pool.join()
     
     conn.commit()
     conn.close()
-    print(os.listdir(f"./out{run}"), "objects found.")
+    logging.info(f"{len(os.listdir(f"./out{run}"))} objects found.")
