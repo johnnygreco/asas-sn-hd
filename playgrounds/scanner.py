@@ -28,7 +28,7 @@ import sqlite3, multiprocessing, logging
 MAX_TRIES = 10
 MAX_FINDINGS = 3
 
-logging.basicConfig(format=f"[%(asctime)s][%(levelname)s] %(message)s", level=logging.INFO)
+logging.basicConfig(format=f"[%(asctime)s][%(levelname)s] %(message)s", level=logging.DEBUG)
 
 #%%
 def get_img_data(coord, file_path, butler=None):
@@ -123,10 +123,11 @@ def process(coord, i, cnt, butler, **kwargs):
         
 
 def callback(objlist):
+    global objCount
     for i in objlist:
         coord, obj, zoomed = i
-        logging.debug(f"Writing {coord}: {str(obj)}")
-        uid = np.base_repr(len(os.listdir(f"./out{run}")), 36)
+        uid = np.base_repr(objCount, 36)
+        logging.debug(f"Writing {coord} with id {uid}: {str(obj)}")
         #cur = conn.cursor()
         c.execute("insert into findings values (?, ?, ?, ?)",
                     (uid, coord[0], coord[1], str(obj)))
@@ -159,7 +160,8 @@ if __name__ == "__main__":
     pool = multiprocessing.Pool(args.processes)
     cnt = len(butler.unique_coords)
     objCount = 0
-    for i in range(cnt):
+
+    for i in range(20):
         coord = butler.unique_coords[i]
         pool.apply_async(process, args=(coord, i, cnt, butler), callback=callback)
     pool.close()
