@@ -123,7 +123,7 @@ def process(coord, i, cnt, butler, **kwargs):
         
 
 def callback(objlist):
-    global objCount
+    global objCount, args
     for i in objlist:
         coord, obj, zoomed = i
         uid = np.base_repr(objCount, 36)
@@ -132,23 +132,24 @@ def callback(objlist):
         c.execute("insert into findings values (?, ?, ?, ?)",
                     (uid, coord[0], coord[1], str(obj)))
         hdu = fits.PrimaryHDU(zoomed)
-        hdu.writeto(f"./out{run}/{uid}.fits")
+        hdu.writeto(os.path.join(args.output_dir, f"{uid}.fits"))
         objCount += 1
-
 
 #%%
 if __name__ == "__main__":
+    run = len(glob.glob("./out*.db"))
+
     parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data.")
     parser.add_argument('--max-tries', type=int, default=10)
     parser.add_argument('--max-findings', type=int, default=2)
     parser.add_argument('--source', type=str)
     parser.add_argument('--processes', type=int, default=4)
+    parser.add_argument('--output-dir', type=str, default=f'./out{run}')
     #parser.add_argument('coordinates', type=str)
 
-    run = len(glob.glob("./out*.db"))
-    os.mkdir(f"./out{run}")
-
     args = parser.parse_args()
+
+    if not os.path.exists(args.output_dir): os.mkdir(args.output_dir)
     butler = ashd.Butler(args.source)
 
     args = parser.parse_args()
