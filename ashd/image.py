@@ -15,7 +15,7 @@ class ASHDImage(object):
         self.butler = butler
         self.header = self.butler.get_header(**img_kws)
         if image_fn is None:
-            assert (ra is not None) and (dec is not None)
+            assert (ra is not None) #and (dec is not None)
             self.image_fn = self.butler.get_image_fn(ra, dec, unit)
         else:
             self.image_fn = image_fn

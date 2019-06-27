@@ -35,8 +35,9 @@ class Butler(object):
         self.unique_coords = SkyCoord(
             df.ra.values, df.dec.values, unit=(u.hourangle, u.deg))
         
-    def get_image_fn(self, ra, dec, unit='deg'):
-        coord = SkyCoord(ra, dec, unit=unit)
+    def get_image_fn(self, ra, dec=None, unit='deg'):
+        #ra can also be the entire SkyCoord here
+        coord = SkyCoord(ra, dec, unit=unit) if dec != None else ra
         seps = self.fn_coords.separation(coord)
         fn_coord = self.fn_coords[seps.argmin()].to_string('hmsdms').split()
         fn_ra = ''.join(re.split('[a-z]', fn_coord[0])[:2])
@@ -52,7 +53,7 @@ class Butler(object):
             fn = fn[0]
         return os.path.join(self.data_dir, fn)
     
-    def get_image(self, ra, dec, unit='deg'):
+    def get_image(self, ra, dec=None, unit='deg'):
         return ASHDImage(self, ra=ra, dec=dec)
 
     def get_hdulist(self, ra=None, dec=None, unit='deg', image_fn=None):
