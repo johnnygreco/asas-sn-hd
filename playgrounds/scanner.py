@@ -140,29 +140,35 @@ if __name__ == "__main__":
     run = len(glob.glob("./out*.db"))
 
     parser = argparse.ArgumentParser(description="Try and find dwarf galaxies from the asas-sn data.")
-    parser.add_argument('--max-tries', type=int, default=10)
-    parser.add_argument('--max-findings', type=int, default=2)
+    parser.add_argument('--max-tries', type=int, default=MAX_TRIES)
+    parser.add_argument('--max-findings', type=int, default=MAX_FINDINGS)
     parser.add_argument('--source', type=str)
     parser.add_argument('--processes', type=int, default=4)
     parser.add_argument('--output-dir', type=str, default=f'./out{run}')
+    parser.add_argument('--max-processed', type=int, default=None)
+    #parser.add_argument('--dry-run', type=bool, default=False)
     #parser.add_argument('coordinates', type=str)
 
     args = parser.parse_args()
+
+    logging.info(f"Initializing with arguments: {args}")
 
     if not os.path.exists(args.output_dir): os.mkdir(args.output_dir)
     butler = ashd.Butler(args.source)
 
     args = parser.parse_args()
     logging.info(f"Running with {args.processes} processes. Process {multiprocessing.current_process().pid} is the main process.")
-    conn = sqlite3.connect(f"out{run}.db", check_same_thread=False)
+    conn = sqlite3.connect(os.path.join(args.output_dir, "db"), check_same_thread=False)
     c = conn.cursor()
     c.execute("create table findings (id text, ra real, dec real, properties text)")
 
     pool = multiprocessing.Pool(args.processes)
-    cnt = len(butler.unique_coords)
+    cnt = args.max_processed if (args.max_processed and args.max_processed < len(butler.unique_coords)) else len(butler.unique_coords)
     objCount = 0
 
-    for i in range(20):
+    logging.info(f"Processing {cnt} coordinates.")
+
+    for i in range(cnt):
         coord = butler.unique_coords[i]
         pool.apply_async(process, args=(coord, i, cnt, butler), callback=callback)
     pool.close()
