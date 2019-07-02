@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     for i in range(cnt):
         coord = butler.unique_coords[i]
-        pool.apply_async(process, args=(coord, butler), callback=callback)
+        pool.apply_async(process, args=(coord, butler, f"Index {i + 1}/{cnt}"), callback=callback)
     pool.close()
     pool.join()
     
