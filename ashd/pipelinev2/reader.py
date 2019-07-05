@@ -16,7 +16,7 @@ class Reader:
         self.target = target
         db = os.path.join(self.target, 'db')
         print(f"sqlite:///{db}", os.path.exists(db))
-        self.conn = sqlite3.connect(f"sqlite:///{db}")
+        self.conn = sqlite3.Connection(db)
         if autoload: self.load()
     
     def load(self):
@@ -26,8 +26,8 @@ class Reader:
         
         pos = 0
         for row in c.execute("select * from findings"):
-            self.data.append(row[0:3])
-            self.np_table[pos] = np.fromstring(row[3], dtype=SEP_DTYPE)
+            self.data.append(row[0:4])
+            self.np_table[pos] = np.fromstring(row[4], dtype=SEP_DTYPE)
             pos += 1
     
     def get_img(self, id):
