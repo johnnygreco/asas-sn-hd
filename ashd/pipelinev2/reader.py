@@ -1,5 +1,6 @@
-import sqlite3
+import sqlite3, os
 import numpy as np
+import pandas as pd
 from astropy.io import fits
 
 SEP_DTYPE = [('thresh', '<f8'), ('npix', '<i8'), ('tnpix', '<i8'), ('xmin', '<i8'), ('xmax', '<i8'), ('ymin', '<i8'),
@@ -13,16 +14,21 @@ SQL_DTYPE=[("id", "<i8"), ("ra", "<f8"), ("dec", "<f8")]
 class Reader:
     def __init__(self, target, autoload = True):
         self.target = target
-        self.conn = sqlite3.connect(f"sqlite:///{target}/db")
+        db = os.path.join(self.target, 'db')
+        print(f"sqlite:///{db}", os.path.exists(db))
+        self.conn = sqlite3.connect(f"sqlite:///{db}")
         if autoload: self.load()
     
     def load(self):
         c = self.conn.cursor()
         self.data = []
+        for row in c.execute("select count(*) from findings"): self.np_table = np.empty(row[0], dtype=SEP_DTYPE)
+        
+        pos = 0
         for row in c.execute("select * from findings"):
-            d = np.fromstring(row[4], dtype=SEP_DTYPE)
-            row[4] = d
-            self.data.append(row)
+            self.data.append(row[0:3])
+            self.np_table[pos] = np.fromstring(row[3], dtype=SEP_DTYPE)
+            pos += 1
     
     def get_img(self, id):
         fname = id
