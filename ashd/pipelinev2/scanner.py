@@ -36,11 +36,12 @@ def process(coord, butler, logstr='', **kwargs):
         zoomed_img = img.data[obj['ymin']:obj['ymax'], obj['xmin']:obj['xmax']]
         logging.info(f"At {coord}: {str(obj)}; Hash: {objhash(obj)}")
         out.append((coord, obj, zoomed_img))
-    return out
+    return (out, img.header)
         
 
-def callback(objlist):
+def callback(params):
     global objCount, args
+    objlist, header = params
     for i in objlist:
         coord, obj, zoomed = i
         uid = np.base_repr(objCount, 36)
@@ -50,6 +51,7 @@ def callback(objlist):
         c.execute("insert into findings values (?, ?, ?, ?, ?)",
                     (uid, h, coord[0], coord[1], obj.tostring()))
         hdu = fits.PrimaryHDU(zoomed)
+        hdu.header = header
         hdu.writeto(os.path.join(args.output_dir, f"{uid}.fits"))
         objCount += 1
 
