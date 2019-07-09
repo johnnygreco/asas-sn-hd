@@ -21,19 +21,24 @@ class Reader:
     
     def load(self):
         c = self.conn.cursor()
-        self.data = []
-        for row in c.execute("select count(*) from findings"): self.np_table = np.empty(row[0], dtype=SEP_DTYPE)
+        self.extra_data = []
+        for row in c.execute("select count(*) from findings"): np_table = np.empty(row[0], dtype=SEP_DTYPE)
         
         pos = 0
+        #ra = []; dec = []
         for row in c.execute("select * from findings"):
-            self.data.append(row[0:4])
-            self.np_table[pos] = np.fromstring(row[4], dtype=SEP_DTYPE)
+            self.extra_data.append(row[0:4])
+            np_table[pos] = np.fromstring(row[4], dtype=SEP_DTYPE)
             pos += 1
+        self.data = pd.DataFrame(np_table)
+        self.data['ra'] = [i[2] for i in self.extra_data]
+        self.data['dec'] = [i[3] for i in self.extra_data]
+        
     
     def get_img(self, id):
         fname = id
         if type(id) == int:
             fname = np.base_repr(id, 36)
-        return fits.open(fname)
+        return fits.open(fname)[0]
 
         
