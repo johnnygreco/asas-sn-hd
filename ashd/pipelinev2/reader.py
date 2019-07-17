@@ -37,7 +37,7 @@ class Reader:
     
     def get_img(self, id):
         fname = id
-        if type(id) == int:
+        if type(id) != str:
             fname = np.base_repr(id, 36)
         return fits.open(os.path.join(self.target, f"{fname}.fits"))[0]
 

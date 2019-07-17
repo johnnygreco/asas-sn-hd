@@ -19,7 +19,10 @@ class ASHDImage(object):
             self.image_fn = self.butler.get_image_fn(ra, dec, unit)
         else:
             self.image_fn = image_fn
-        self.zpt = self.header['ZEROPT']
+        try:
+            self.zpt = self.header['ZEROPT']
+        except:
+            self.zpt = np.nan
         self.wcs = WCS(self.header)
         self.data = ndarray_byteswap(self.butler.get_data(**img_kws))
 
