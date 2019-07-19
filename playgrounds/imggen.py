@@ -69,7 +69,8 @@ def writeout(idx, out=None):
         ax.set_xlim(d['xmin'][idx] - 20, d['xmax'][idx] + 20)
         ax.set_ylim(d['ymin'][idx] - 20, d['ymax'][idx] + 20)
         ax.set(xlabel=', '.join([f"{d[x][idx]:.2f}" for x in ('ra', 'dec')]))
-        plt.savefig(out if out else f"scanlations/{idx}.png", bbox_inches='tight')
+        plt.savefig(out if out else f"out_scans/{idx}.png", bbox_inches='tight')
+        plt.close('all')
         print("Done", idx)
     except:
         print(sys.exc_info())
