@@ -65,10 +65,18 @@ app.addButton("No", n)
 app.addButton("Back", back)
 app.addButton("Save", save)
 app.addButton("Done", done)
-app.bindKey("y", y)
+app.bindKey("y", y) #Dwarf
 app.bindKey("n", n)
 app.bindKey("d", done)
 app.bindKey("s", save)
 app.bindKey("b", back)
+
+d = lambda x: app.bindKey(x, lambda: add(x))
+d('c') #Cirrus
+d('g') #Galaxy
+d('f') #UDG
+d('u') #Unknown
+
+app.addLabel("y: dwarf, c: cirrus; g: general galaxy;\nf: udg; u: unknown; n: nothing good")
 
 app.go()

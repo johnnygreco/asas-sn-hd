@@ -3,6 +3,8 @@ from common import cut_corners
 import numpy as np
 from scipy import signal
 
+# this algo revolves around finding objects wherein some form gradient/sersic can be found
+# basically, how do you avoid star clusters
 def find_lbg(objects, data, **kwargs):
     maxtries = kwargs.get('maxtries', objects.size)
     if not kwargs.get('corners', False): objects = np.array(list(cut_corners(objects, thresh=500)))

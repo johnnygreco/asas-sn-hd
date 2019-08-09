@@ -2,6 +2,8 @@ from global_vals import *
 from common import cut_corners
 import numpy as np
 
+# this algorithm revolves around taking the largest objects and measuring their flux
+# those with a lower average flux while still being large are our best LSB candidates
 def find_lbg(objects, data, **kwargs):
     if not kwargs.get('corners', False): objects = np.array(list(cut_corners(objects, thresh=500)))
     percentiles = kwargs.get('percentiles', [10,99])
